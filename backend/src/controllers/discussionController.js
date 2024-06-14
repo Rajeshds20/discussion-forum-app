@@ -16,6 +16,8 @@ class DiscussionController {
             //     return res.json(nodeCache.get('discussions' + start));
             const discussions = await Discussion.find().select('user_id title image created_on view_count likes').sort({ created_on: -1 }).skip(parseInt(start)).limit(parseInt(limit));
             // nodeCache.set('discussions' + start, discussions, 1000 * 60 * 60);
+            if (discussions.length == 0)
+                return res.status(404).json({ msg: 'No Discussions found, Try adding one' });
             res.json(discussions);
         } catch (err) {
             console.error(err.message);
@@ -43,14 +45,21 @@ class DiscussionController {
     async addDiscussion(req, res) {
         const { title, text, image, hashtags } = req.body;
         try {
-            discussionSchema.parse(req.body);
+
+            // console.log(title, text, image, hashtags);
+            discussionSchema.parse({ ...req.body, user_id: req.user.id, hashtags: hashtags.split(',') });
+
+            if (!req.file.originalname.match(/\.(jpg|jpeg|png)$/))
+                return res.status(400).json({ msg: 'Please upload an image type only' });
 
             let imageId = null;
             if (req.file) {
                 const formData = new FormData();
-                formData.append('image', req.file.buffer, req.file.originalname);
+                const imageBlob = new Blob([req.file.buffer], { type: "image/" + req.file.originalname.split('.').pop() });
+                formData.append("image", imageBlob, req.file.originalname);
+                // formData.append('image', new Blob(req.file.buffer), req.file.originalname);
 
-                const response = await axios.post(`${IMAGE_HANDLER_URL}/upload`, formData, {
+                const response = await axios.post(`${IMAGE_HANDLER_URL}/image`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data'
                     }
@@ -65,7 +74,7 @@ class DiscussionController {
                 title,
                 text,
                 image: imageId,
-                hashtags
+                hashtags: hashtags.split(',').map(hashtag => hashtag.trim())
             });
             await newDiscussion.save();
             res.json(newDiscussion);

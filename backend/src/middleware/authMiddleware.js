@@ -5,6 +5,12 @@ module.exports = function (req, res, next) {
     // const token = authorization && authorization.startsWith('Bearer') ? authorization.split(' ')[1] : null;
 
     // Get auth token from cookie
+
+    const cookie = req.cookies;
+
+    if (!cookie)
+        return res.status(401).json({ msg: 'No token, authorization denied' });
+
     const token = req.cookies.token;
 
     if (!token)

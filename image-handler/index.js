@@ -10,9 +10,9 @@ const PORT = 5001;
 const upload = multer({
     dest: 'uploads/',
     fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+        console.log(file.originalname);
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/))
             return cb(new Error('Please upload an image'));
-        }
         cb(null, true);
     },
     limits: {
@@ -30,13 +30,14 @@ const upload = multer({
 
 app.post('/image', upload.single('image'), (req, res) => {
     try {
+        console.log(req.file);
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
         }
         res.json({ imageId: req.file.filename });
     }
     catch (error) {
-        console.error(error);
+        console.log(error.message);
         res.status(500).json({ error: 'Something went wrong' });
     }
 });
@@ -51,7 +52,7 @@ app.get('/image/:id', (req, res) => {
         res.status(200).sendFile(filePath);
     }
     catch (error) {
-        console.error(error);
+        console.log(error.message);
         res.status(500).json({ error: 'Something went wrong' });
     }
 });
